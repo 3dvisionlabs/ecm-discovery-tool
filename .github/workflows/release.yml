@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install avahi
+        run: sudo apt-get install -y avahi-utils
+
+      - name: Build
+        run: npm run make:linux
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            out/make/deb/**/*.deb
+            out/make/rpm/**/*.rpm
+            out/make/AppImage/**/*.AppImage
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate .icns icon
+        run: iconutil -c icns src/icons/icon.iconset -o src/icons/icon.icns
+
+      - name: Build
+        run: npm run make:mac
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            out/make/**/*.dmg
+            out/make/zip/darwin/**/*.zip
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run make:win
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            out/make/squirrel.windows/**/*.exe
+            out/make/zip/win32/**/*.zip
