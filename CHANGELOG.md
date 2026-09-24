@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.10.0-alpha.1] - 2026-09-24
+
+### Changed
+- Rewritten with Tauri (Rust) instead of Electron: much smaller download (the Linux packages are now about 2 MB). The interface and features stay the same.
+- Windows: new installer (`…_x64-setup.exe`), still per user without admin rights. **Uninstall version 0.9.x first** (Settings → Apps), it is not replaced automatically.
+- Linux: the `.deb` and `.rpm` packages replace an installed version 0.9.x automatically.
+- Linux: text is sharp with fractional display scaling (e.g. 110 %) on Wayland
+
+### Added
+- macOS: Edit menu, so copy and paste work in text fields
+
+---
+
 ## [0.9.1] - 2026-03-19
 
 ### Fixed

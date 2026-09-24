@@ -1,0 +1,81 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Edge Camera Discovery",
+  "mainBinaryName": "ecm-discovery",
+  "version": "../package.json",
+  "identifier": "com.3dvisionlabs.ecm-discovery",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Edge Camera Discovery",
+        "width": 720,
+        "height": 580,
+        "minWidth": 480,
+        "minHeight": 360,
+        "backgroundColor": "#151C28"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "deb",
+      "rpm",
+      "appimage",
+      "nsis",
+      "dmg",
+      "app"
+    ],
+    "publisher": "3dvisionlabs GmbH",
+    "copyright": "Copyright \u00a9 3dvisionlabs GmbH",
+    "category": "Utility",
+    "shortDescription": "Discover 3dvisionlabs ECM cameras on the local network",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "linux": {
+      "deb": {
+        "depends": [
+          "avahi-utils"
+        ],
+        "replaces": [
+          "ecm-discovery"
+        ],
+        "conflicts": [
+          "ecm-discovery"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "avahi-tools"
+        ],
+        "obsoletes": [
+          "ecm-discovery"
+        ]
+      }
+    },
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "10.15"
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

@@ -24,12 +24,12 @@ ECM cameras broadcast their presence on the local network using **mDNS/Bonjour**
 
 | Platform | Requirement |
 |---|---|
-| Windows | Windows 10 or later |
+| Windows | Windows 10 or later with Microsoft Edge WebView2 (preinstalled on Windows 11 and current Windows 10; the installer adds it if missing) |
 | macOS | macOS 10.15 (Catalina) or later |
-| Linux (Debian/Ubuntu) | `avahi-utils` (`sudo apt install avahi-utils`) |
-| Linux (Fedora/RHEL) | `avahi-tools` (`sudo dnf install avahi-tools`) |
+| Linux (Debian/Ubuntu) | `avahi-utils` and WebKitGTK 4.1 (`sudo apt install avahi-utils libwebkit2gtk-4.1-0`) |
+| Linux (Fedora/RHEL) | `avahi-tools` and WebKitGTK 4.1 (`sudo dnf install avahi-tools webkit2gtk4.1`) |
 
-The Linux `.deb` and `.rpm` packages declare `avahi-utils` / `avahi-tools` as a dependency and will install it automatically. For `.AppImage`, install it manually.
+The Linux `.deb` and `.rpm` packages declare these as dependencies and install them automatically. They also replace an installed Electron-based version (0.9.x). For `.AppImage`, install `avahi-utils` / `avahi-tools` manually.
 
 ### Network
 
@@ -44,13 +44,13 @@ Download the installer for your platform from the [Releases](../../releases) pag
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows | `Edge Camera Discovery-x.x.x Setup.exe` | Installs to user profile, no admin rights needed |
-| Windows (portable) | `Edge Camera Discovery-win32-x64-x.x.x.zip` | Extract and run, no installation |
-| macOS | `Edge Camera Discovery-x.x.x-arm64.dmg` | Drag to Applications |
-| macOS (zip) | `Edge Camera Discovery-darwin-arm64-x.x.x.zip` | Extract and run |
-| Linux | `ecm-discovery_x.x.x_amd64.deb` | Debian/Ubuntu |
-| Linux | `ecm-discovery-x.x.x.x86_64.rpm` | Fedora/RHEL/openSUSE |
-| Linux | `Edge Camera Discovery-x.x.x-x64.AppImage` | Universal (any distro) |
+| Windows | `Edge Camera Discovery_x.x.x_x64-setup.exe` | Installs to user profile, no admin rights needed |
+| Windows (portable) | `Edge Camera Discovery_x.x.x_x64-portable.zip` | Extract and run, no installation (needs WebView2) |
+| macOS | `Edge Camera Discovery_x.x.x_aarch64.dmg` | Apple Silicon. Drag to Applications |
+| macOS (zip) | `Edge Camera Discovery_x.x.x_aarch64.app.zip` | Apple Silicon. Extract and run |
+| Linux | `Edge Camera Discovery_x.x.x_amd64.deb` | Debian/Ubuntu |
+| Linux | `Edge Camera Discovery-x.x.x-1.x86_64.rpm` | Fedora/RHEL/openSUSE |
+| Linux | `Edge Camera Discovery_x.x.x_amd64.AppImage` | Universal (any distro) |
 
 ---
 
@@ -101,10 +101,14 @@ If you prefer not to bypass OS security warnings, you can build the app yourself
 
 ## Building from Source
 
-### Prerequisites (all platforms)
+### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or later
-- npm (included with Node.js)
+- [Node.js](https://nodejs.org/) 24 or later (version in `.nvmrc`) with npm
+- [Rust](https://www.rust-lang.org/tools/install) (stable)
+- Platform build dependencies for Tauri, see [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). On Debian/Ubuntu:
+  ```bash
+  sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+  ```
 
 Clone the repository and install dependencies:
 
@@ -117,72 +121,36 @@ npm install
 ### Development
 
 ```bash
-npm start
+npm start          # app with hot-reload of the UI
+npm test           # Rust unit tests (protocol test vectors, parsers)
+npm run lint       # ESLint for the TypeScript UI
 ```
 
-Launches the app with hot-reload. Note: the dock/taskbar tooltip shows "Electron" in dev mode — this is an Electron limitation. Packaged builds show the correct app name.
-
----
-
-### Build — macOS
-
-Requires a Mac. Produces `.dmg` and `.zip`.
+### Build
 
 ```bash
-./scripts/build-mac.sh
+npm run make
 ```
 
-This script installs dependencies, generates the `.icns` icon from the iconset, and runs `electron-forge make`.
+Builds the installers for the platform you are on (cross-compilation is not supported):
 
-**Output** (exact path and arch suffix depend on your Mac's CPU):
-```
-out/make/Edge Camera Discovery-x.x.x-arm64.dmg       ← Apple Silicon
-out/make/zip/darwin/arm64/Edge Camera Discovery-darwin-arm64-x.x.x.zip
-```
+| Platform | Output in `target/release/bundle/` |
+|---|---|
+| Windows | `nsis/Edge Camera Discovery_x.x.x_x64-setup.exe` |
+| macOS | `dmg/Edge Camera Discovery_x.x.x_aarch64.dmg`, `macos/Edge Camera Discovery.app` |
+| Linux | `deb/…amd64.deb`, `rpm/…x86_64.rpm`, `appimage/…amd64.AppImage` |
 
----
+### Linux with fractional display scaling
 
-### Build — Windows
-
-Requires a Windows machine. Produces a Squirrel installer `.exe` and a portable `.zip`.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1
-```
-
-**Output:**
-```
-out/make/squirrel.windows/x64/Edge Camera Discovery-x.x.x Setup.exe
-out/make/zip/win32/x64/Edge Camera Discovery-win32-x64-x.x.x.zip
-```
-
----
-
-### Build — Linux
-
-Can be run on any Linux x64 machine. Produces `.deb`, `.rpm`, and `.AppImage`.
-
-```bash
-npm run make:linux
-```
-
-**Output:**
-```
-out/make/deb/x64/ecm-discovery_x.x.x_amd64.deb
-out/make/rpm/x64/ecm-discovery-x.x.x-1.x86_64.rpm
-out/make/AppImage/x64/Edge Camera Discovery-x.x.x-x64.AppImage
-```
-
-> Cross-compilation is not supported — each platform must be built on its native OS.
+On Wayland, GTK3 only supports integer scale factors, so text in the app would look grainy at e.g. 110 % scaling. The app therefore runs via XWayland when it is available. Set `ECM_NATIVE_WAYLAND=1` to run it natively on Wayland.
 
 ---
 
 ## Tech Stack
 
-- [Electron](https://www.electronjs.org/) + TypeScript
-- [electron-forge](https://www.electronforge.io/) for build pipeline and packaging
-- Platform-native mDNS: `dns-sd` (macOS), `avahi-browse` (Linux), `dns-packet` + raw UDP multicast (Windows)
-- Plain HTML/CSS renderer — no UI framework
+- [Tauri 2](https://v2.tauri.app/): Rust backend, system web view for the UI (WebView2, WKWebView, WebKitGTK)
+- Plain HTML/CSS/TypeScript UI, bundled with [Vite](https://vite.dev/) — no UI framework
+- Platform-native mDNS: `dns-sd` (macOS), `avahi-browse` (Linux), raw mDNS query via UDP multicast (Windows)
 
 ---
 

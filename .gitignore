@@ -82,14 +82,13 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
-# Webpack
-.webpack/
-
 # Vite
 .vite/
+dist/
 
-# Electron-Forge
-out/
+# Rust / Tauri
+target/
+src-tauri/gen/
 
 # Large reference files
 references/*.pdf

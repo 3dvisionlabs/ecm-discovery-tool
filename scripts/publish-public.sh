@@ -2,20 +2,32 @@
 set -euo pipefail
 
 # publish-public.sh
-# Creates/updates the 'public' branch with only explicitly included files.
-# Uses an INCLUDE list (allowlist) — new files must be added here to appear
-# on GitHub. This is safer than a strip list: forgetting a file means it's
-# missing on GitHub (harmless), not that internal files leak (dangerous).
+# Adds a commit to the 'public' branch that contains only the files on the
+# allowlist below, taken from HEAD. The 'public' branch is pushed to GitHub's
+# main; GitHub never sees the development history.
 #
-# - First run: creates an orphan branch (no dev history)
-# - Subsequent runs: appends a new commit (preserves public release history)
+# Allowlist, not strip list: forgetting a file means it's missing on GitHub
+# (harmless), not that internal files leak (dangerous).
+#
+# The working tree is never touched: the commit is built from a temporary
+# index. (An earlier version checked out 'public' and ran `git rm -rf .` plus
+# `git clean -fd`, which also deleted ignored files such as node_modules/,
+# target/ and references/*.pdf.)
+#
+# If there is no local 'public' branch, it is created from github/main, so a
+# fresh clone continues the public history instead of starting a new one.
 #
 # Usage:
 #   ./scripts/publish-public.sh
 #
-# After running, push to GitHub:
-#   First release:      git push github public:main --force && git push github vX.Y.Z
-#   Subsequent releases: git push github public:main && git push github vX.Y.Z
+# Then push (see the output for the exact commands):
+#   git push github public:main       # always
+#   git push github vX.Y.Z            # only for a release: starts the release build
+#
+# Environment:
+#   PUBLIC_AUTHOR_NAME / PUBLIC_AUTHOR_EMAIL   author of the public commit
+#   GITHUB_REMOTE (default: github)
+#   GIT_SSH_COMMAND to push/fetch with a deploy key instead of your own SSH key
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -26,51 +38,78 @@ cd "$PROJECT_DIR"
 # Everything else is excluded by default. Add new public files here.
 INCLUDE=(
   "src/"
+  "src-tauri/"
+  "crates/"
   "scripts/"
   ".github/"
+  "index.html"
+  "app-icon.png"
   "package.json"
   "package-lock.json"
   "tsconfig.json"
-  "forge.config.ts"
-  "webpack.main.config.ts"
-  "webpack.renderer.config.ts"
-  "webpack.rules.ts"
-  "webpack.plugins.ts"
+  "vite.config.ts"
+  "Cargo.toml"
+  "Cargo.lock"
+  "rustfmt.toml"
+  ".nvmrc"
+  "eslint.config.mjs"
   "README.md"
   "CHANGELOG.md"
   "LICENSE"
   ".gitignore"
 )
 
-# --- Guard: abort if working tree is dirty ---
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "ERROR: Working tree has uncommitted changes. Please commit or stash before publishing." >&2
+# Identity for the public commit, so it links to the right GitHub account
+AUTHOR_NAME="${PUBLIC_AUTHOR_NAME:-Lars Meinel}"
+AUTHOR_EMAIL="${PUBLIC_AUTHOR_EMAIL:-lmeinel@gmail.com}"
+REMOTE="${GITHUB_REMOTE:-github}"
+REMOTE_BRANCH="main"
+PUBLIC_REF="refs/heads/public"
+
+die() {
+  echo "ERROR: $*" >&2
   exit 1
+}
+
+# --- Guard: only committed changes are published ---
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  die "Working tree has uncommitted changes. Commit or stash them first (only HEAD is published)."
 fi
 
-# --- Resolve version and current branch ---
 VERSION=$(node -p "require('./package.json').version")
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 TAG="v$VERSION"
+echo "==> Publishing HEAD of $(git rev-parse --abbrev-ref HEAD) ($(git rev-parse --short HEAD)) for $TAG"
 
-echo "==> Publishing public branch for $TAG (from $CURRENT_BRANCH)"
+# --- Make sure 'public' continues GitHub's history ---
+git remote get-url "$REMOTE" >/dev/null 2>&1 \
+  || die "No remote '$REMOTE'. Add it first: git remote add $REMOTE git@github.com:3dvisionlabs/ecm-discovery-tool.git"
 
-# --- Snapshot current HEAD into a temp dir via git archive ---
-TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+echo "    Fetching $REMOTE/$REMOTE_BRANCH..."
+git fetch --quiet "$REMOTE" "$REMOTE_BRANCH" --tags \
+  || die "Cannot fetch from '$REMOTE'. Check access (GIT_SSH_COMMAND with the deploy key?)."
+REMOTE_HEAD=$(git rev-parse --verify "refs/remotes/$REMOTE/$REMOTE_BRANCH")
 
-echo "    Exporting clean snapshot..."
-git archive HEAD | tar -x -C "$TMPDIR"
+if ! git show-ref --verify --quiet "$PUBLIC_REF"; then
+  git branch public "$REMOTE_HEAD"
+  echo "    Created local 'public' from $REMOTE/$REMOTE_BRANCH"
+elif ! git merge-base --is-ancestor "$REMOTE_HEAD" public; then
+  die "Local 'public' does not contain $REMOTE/$REMOTE_BRANCH (published from another machine?).
+       If 'public' has nothing you still need: git branch -f public $REMOTE/$REMOTE_BRANCH"
+fi
 
-# --- Build a second temp dir with only included files ---
-PUBDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR" "$PUBDIR"' EXIT
+# --- Collect the allowlisted files from HEAD ---
+WORKDIR=$(mktemp -d)
+trap 'rm -rf "$WORKDIR"' EXIT
+SNAPSHOT="$WORKDIR/snapshot"
+PUBDIR="$WORKDIR/public"
+mkdir -p "$SNAPSHOT" "$PUBDIR"
+
+git archive HEAD | tar -x -C "$SNAPSHOT"
 
 echo "    Selecting public files..."
 for item in "${INCLUDE[@]}"; do
-  src="$TMPDIR/$item"
+  src="$SNAPSHOT/$item"
   if [ -e "$src" ]; then
-    # Preserve directory structure
     dest="$PUBDIR/$item"
     if [ -d "$src" ]; then
       mkdir -p "$dest"
@@ -85,56 +124,53 @@ for item in "${INCLUDE[@]}"; do
   fi
 done
 
-# --- Create or append to public branch ---
-if git show-ref --verify --quiet refs/heads/public; then
-  echo "    Appending to existing public branch..."
-  git checkout public
+# --- Build the commit from a temporary index (working tree stays untouched) ---
+export GIT_INDEX_FILE="$WORKDIR/index"
+git --work-tree="$PUBDIR" add --all --force .
+TREE=$(git write-tree)
+unset GIT_INDEX_FILE
+
+PARENT=$(git rev-parse --verify public)
+if [ "$TREE" = "$(git rev-parse "public^{tree}")" ]; then
+  echo "    Nothing changed since the last publish."
+  COMMIT="$PARENT"
 else
-  echo "    Creating new orphan public branch..."
-  git checkout --orphan public
-fi
-
-# Remove all tracked files AND untracked files (clean slate)
-git rm -rf . --quiet
-git clean -fd --quiet
-
-# --- Copy only included files into working tree ---
-cp -r "$PUBDIR/." .
-
-# --- Extract CHANGELOG entry for this version ---
-CHANGELOG_BODY=$(awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md | sed '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba}')
-
-# --- Commit (skip if nothing changed) ---
-# Use GitHub identity so public branch commits link to lmeinel on GitHub
-GITHUB_NAME="Lars Meinel"
-GITHUB_EMAIL="lmeinel@gmail.com"
-
-git add .
-if git diff --cached --quiet; then
-  echo "    Nothing changed since last publish — re-tagging existing commit."
-else
-  if [ -n "$CHANGELOG_BODY" ]; then
-    GIT_AUTHOR_NAME="$GITHUB_NAME" GIT_AUTHOR_EMAIL="$GITHUB_EMAIL" \
-    GIT_COMMITTER_NAME="$GITHUB_NAME" GIT_COMMITTER_EMAIL="$GITHUB_EMAIL" \
-    git commit -m "Release $TAG" -m "$CHANGELOG_BODY"
+  if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+    # Tag exists already: update between releases (README, workflows, ...)
+    MESSAGE="Update public files ($TAG)"
+    BODY=""
   else
-    GIT_AUTHOR_NAME="$GITHUB_NAME" GIT_AUTHOR_EMAIL="$GITHUB_EMAIL" \
-    GIT_COMMITTER_NAME="$GITHUB_NAME" GIT_COMMITTER_EMAIL="$GITHUB_EMAIL" \
-    git commit -m "Release $TAG"
+    MESSAGE="Release $TAG"
+    BODY=$(awk -v v="$VERSION" 'index($0, "## [" v "]") == 1 {found=1; next} found && /^## \[/ {exit} found {print}' CHANGELOG.md \
+      | sed '/./,$!d' | sed -e :a -e '/^\n*$/{$d;N;ba}')
+    [ -n "$BODY" ] || echo "      WARNING: no CHANGELOG entry '## [$VERSION]' found"
   fi
+  COMMIT=$(printf '%s\n\n%s\n' "$MESSAGE" "$BODY" | \
+    GIT_AUTHOR_NAME="$AUTHOR_NAME" GIT_AUTHOR_EMAIL="$AUTHOR_EMAIL" \
+    GIT_COMMITTER_NAME="$AUTHOR_NAME" GIT_COMMITTER_EMAIL="$AUTHOR_EMAIL" \
+    git commit-tree "$TREE" -p "$PARENT" -F - | head -1)
+  git update-ref "$PUBLIC_REF" "$COMMIT" "$PARENT"
+  echo "    Committed $(git rev-parse --short "$COMMIT"): $MESSAGE"
 fi
 
-# --- Tag the public commit ---
-git tag -d "$TAG" 2>/dev/null && echo "      (replaced existing tag $TAG)" || true
-git tag "$TAG"
-echo "    Tagged commit as $TAG"
-
-# --- Return to original branch ---
-git checkout "$CURRENT_BRANCH"
+# --- Tag: only for a new version; existing tags are never moved ---
+TAG_COMMIT=$(git rev-parse --verify --quiet "refs/tags/$TAG^{commit}" || true)
+PUSH_TAG=""
+if [ -z "$TAG_COMMIT" ]; then
+  git tag "$TAG" "$COMMIT"
+  echo "    Tagged $(git rev-parse --short "$COMMIT") as $TAG"
+  PUSH_TAG=1
+elif [ "$TAG_COMMIT" = "$COMMIT" ]; then
+  echo "    Tag $TAG already points to this commit."
+  git ls-remote --exit-code --tags "$REMOTE" "refs/tags/$TAG" >/dev/null 2>&1 || PUSH_TAG=1
+else
+  echo "    Tag $TAG stays on $(git rev-parse --short "$TAG_COMMIT") (already released; this is an update between releases)."
+  echo "    To redo an unpushed release instead: git tag -f $TAG public"
+fi
 
 echo ""
-echo "==> Done. Branch 'public' is ready at $TAG."
-echo ""
-echo "    Push to GitHub (first release use --force, subsequent releases omit it):"
-echo "      git push github public:main"
-echo "      git push github $TAG"
+echo "==> Done. Branch 'public' is at $(git rev-parse --short public). Push with:"
+echo "      git push $REMOTE public:$REMOTE_BRANCH"
+if [ -n "$PUSH_TAG" ]; then
+  echo "      git push $REMOTE $TAG    # starts the release build"
+fi

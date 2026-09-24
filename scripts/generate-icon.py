@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate app icon from corporate SVG logo on branded background."""
+"""Generate app-icon.png from the corporate SVG logo on a branded background."""
 
 import os
 import subprocess
@@ -13,7 +13,7 @@ RICH_BLACK = (21, 28, 40)
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SVG_PATH = os.path.join(PROJECT_ROOT, "references", "3dvisionlabs_Icon_Green.svg")
-ICON_DIR = os.path.join(PROJECT_ROOT, "src", "icons")
+ICON_DIR = PROJECT_ROOT
 
 
 def rounded_rect_mask(size, radius):
@@ -47,33 +47,9 @@ def main():
     offset_y = (SIZE - logo.height) // 2
     img.paste(logo, (offset_x, offset_y), logo)
 
-    # Save 1024x1024 PNG
-    img.save(os.path.join(ICON_DIR, "icon.png"))
-    print("Saved icon.png (1024x1024)")
-
-    # Generate ICO for Windows using ImageMagick (Pillow's ICO writer only saves one size)
-    ico_path = os.path.join(ICON_DIR, "icon.ico")
-    ico_sizes = "256,128,64,48,32,24,16"
-    subprocess.run([
-        "convert", os.path.join(ICON_DIR, "icon.png"),
-        "-define", f"icon:auto-resize={ico_sizes}",
-        ico_path,
-    ], check=True)
-    print(f"Saved icon.ico ({ico_sizes})")
-
-    # Generate iconset PNGs for macOS (run iconutil -c icns on macOS)
-    iconset_dir = os.path.join(ICON_DIR, "icon.iconset")
-    os.makedirs(iconset_dir, exist_ok=True)
-    icns_sizes = {
-        "icon_16x16.png": 16, "icon_16x16@2x.png": 32,
-        "icon_32x32.png": 32, "icon_32x32@2x.png": 64,
-        "icon_128x128.png": 128, "icon_128x128@2x.png": 256,
-        "icon_256x256.png": 256, "icon_256x256@2x.png": 512,
-        "icon_512x512.png": 512, "icon_512x512@2x.png": 1024,
-    }
-    for filename, s in icns_sizes.items():
-        img.resize((s, s), Image.LANCZOS).save(os.path.join(iconset_dir, filename))
-    print("Saved iconset/ (run 'iconutil -c icns src/icons/icon.iconset -o src/icons/icon.icns' on macOS)")
+    # Save 1024x1024 PNG; `npm run icons` derives the platform icons from it
+    img.save(os.path.join(ICON_DIR, "app-icon.png"))
+    print("Saved app-icon.png (1024x1024). Now run: npm run icons")
 
     # Cleanup
     os.remove(logo_png)
