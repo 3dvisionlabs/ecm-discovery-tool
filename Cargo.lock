@@ -1118,7 +1118,7 @@ checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
 name = "ecm-discovery"
-version = "0.10.0-alpha.2"
+version = "0.10.0-alpha.3"
 dependencies = [
  "ecm-discovery-core",
  "fdp",
@@ -1131,7 +1131,7 @@ dependencies = [
 
 [[package]]
 name = "ecm-discovery-cli"
-version = "0.10.0-alpha.2"
+version = "0.10.0-alpha.3"
 dependencies = [
  "clap",
  "ecm-discovery-core",
@@ -1146,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "ecm-discovery-core"
-version = "0.10.0-alpha.2"
+version = "0.10.0-alpha.3"
 dependencies = [
  "dirs",
  "fdp",

@@ -17,7 +17,13 @@ set -euo pipefail
 # nothing. Without it the host's xdg-open is used.
 #
 # Usage: ./scripts/fix-appimage.sh <file.AppImage> [appimagetool]
+# Needs desktop-file-validate (package desktop-file-utils).
 #   appimagetool: path to appimagetool; downloaded if omitted
+
+# appimagetool 1.9 refuses to pack without desktop-file-validate (and only
+# says "desktop-file-validate command is missing")
+command -v desktop-file-validate >/dev/null \
+  || { echo "ERROR: desktop-file-validate not found (Debian/Ubuntu: desktop-file-utils)" >&2; exit 1; }
 
 APPIMAGE="$(readlink -f "$1")"
 TOOL="${2:-}"

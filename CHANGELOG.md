@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.10.0-alpha.2] - 2026-09-29
+## [0.10.0-alpha.3] - 2026-09-29
 
 ### Added
 - Cameras with a current firmware are found even if their IP address does not fit your network (e.g. a new camera on a direct cable), via the Ferndale Discovery Protocol. mDNS discovery for cameras with an older firmware stays as before.
