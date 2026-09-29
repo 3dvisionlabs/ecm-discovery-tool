@@ -5,18 +5,18 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'target/', 'src-tauri/', 'node_modules/', 'bugs/', 'references/'],
+    ignores: ['**/dist/', 'target/', 'app/', 'node_modules/', 'bugs/', 'references/'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['src/**/*.ts'],
+    files: ['ui/src/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
     },
   },
   {
-    files: ['scripts/**/*.ts', '*.config.ts'],
+    files: ['scripts/**/*.ts', 'ui/*.config.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },

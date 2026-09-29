@@ -1,0 +1,22 @@
+[package]
+name = "ecm-discovery-core"
+version.workspace = true
+description = "Camera discovery (mDNS + FDP), health checks, Change IP and identify, shared by the app and the CLI"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+fdp = { path = "../protocol" }
+serde.workspace = true
+serde_json.workspace = true
+tokio = { version = "1", features = ["macros", "net", "process", "rt", "sync", "time", "io-util"] }
+dirs = "6"
+hex = "0.4"
+humantime = "2"
+if-addrs = "0.15"
+simple-dns = "0.12"
+zeroize = "1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread"] }

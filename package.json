@@ -1,22 +1,23 @@
 {
   "name": "ecm-discovery",
   "productName": "Edge Camera Discovery",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-alpha.2",
   "description": "Discover 3dvisionlabs ECM cameras on the local network",
   "private": true,
   "type": "module",
   "license": "MIT",
   "author": "3dvisionlabs GmbH",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "vite ui",
+    "build": "tsc --noEmit -p ui && vite build ui",
     "tauri": "tauri",
     "start": "tauri dev",
     "make": "tauri build",
     "test": "cargo test --workspace",
     "lint": "eslint .",
-    "icons": "tauri icon app-icon.png && rm -rf src-tauri/icons/android src-tauri/icons/ios src-tauri/icons/Square* src-tauri/icons/StoreLogo.png src-tauri/icons/64x64.png",
-    "mock:ecmdp": "tsx scripts/ecmdp-mock.ts"
+    "icons": "tauri icon app-icon.png && rm -rf app/icons/android app/icons/ios app/icons/Square* app/icons/StoreLogo.png app/icons/64x64.png",
+    "mock:fdp": "tsx scripts/fdp-mock.ts",
+    "test:mock": "tsx scripts/mock/vectors.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1"

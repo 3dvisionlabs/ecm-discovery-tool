@@ -35,6 +35,10 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      # Spec test vectors against the mock's Node.js crypto (independent of protocol/)
+      - name: Mock test vectors
+        run: npm run test:mock
+
   # Platform-specific code (macOS menu, XWayland switch, network crates) only
   # compiles on its own platform, so clippy and tests run on all three.
   # Debug builds do not need the built UI (they use devUrl), hence no npm here.

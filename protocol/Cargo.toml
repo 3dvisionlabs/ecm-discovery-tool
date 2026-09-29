@@ -1,0 +1,18 @@
+[package]
+name = "fdp"
+version = "0.1.0"
+description = "Ferndale Discovery Protocol (FDP): messages, crypto and IPv4 helpers shared by client and firmware"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+aes-gcm = "0.11"
+base64 = "0.23"
+getrandom = "0.4"
+hex = "0.4"
+hkdf = "0.13"
+sha2 = "0.11"
+x25519-dalek = { version = "3", features = ["static_secrets"] }

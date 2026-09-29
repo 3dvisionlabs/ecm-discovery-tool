@@ -1,0 +1,18 @@
+[package]
+name = "ecm-discovery-cli"
+version.workspace = true
+description = "Command line version of Edge Camera Discovery: list, open, identify and Change IP"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+ecm-discovery-core = { path = "../lib" }
+fdp = { path = "../protocol" }
+serde.workspace = true
+serde_json.workspace = true
+clap = { version = "4", features = ["derive"] }
+open = "5"
+rpassword = "7"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+zeroize = "1"

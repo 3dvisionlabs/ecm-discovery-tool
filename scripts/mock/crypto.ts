@@ -1,7 +1,7 @@
-// ECMDP cryptography for the mock (spec §5): X25519 + HKDF-SHA256 + AES-256-GCM,
+// FDP cryptography for the mock (spec §5): X25519 + HKDF-SHA256 + AES-256-GCM,
 // with Node's built-in crypto module (independent of the Rust implementation).
 import * as crypto from 'crypto';
-import { ECMDP_ENC_ALG, hkdfInfo } from './ecmdp';
+import { FDP_ENC_ALG, hkdfInfo } from './fdp';
 
 // DER prefixes for wrapping raw 32-byte X25519 keys
 const SPKI_PREFIX = Buffer.from('302a300506032b656e032100', 'hex');
@@ -88,12 +88,12 @@ export function seal(
   cipher.setAAD(Buffer.from(aadFor(epkHex), 'utf8'));
   const ct = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final(), cipher.getAuthTag()]);
 
-  return { alg: ECMDP_ENC_ALG, epk: epkHex, nonce: nonce.toString('hex'), ct: ct.toString('hex') };
+  return { alg: FDP_ENC_ALG, epk: epkHex, nonce: nonce.toString('hex'), ct: ct.toString('hex') };
 }
 
 /** Decrypt a sealed payload with the device key pair. Throws on any failure. */
 export function open(version: number, device: RawKeyPair, sealed: Sealed, aad: string): string {
-  if (sealed.alg !== ECMDP_ENC_ALG) throw new Error(`unsupported alg ${sealed.alg}`);
+  if (sealed.alg !== FDP_ENC_ALG) throw new Error(`unsupported alg ${sealed.alg}`);
   const epk = Buffer.from(sealed.epk, 'hex');
   const nonce = Buffer.from(sealed.nonce, 'hex');
   const ct = Buffer.from(sealed.ct, 'hex');

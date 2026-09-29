@@ -88,7 +88,7 @@ dist/
 
 # Rust / Tauri
 target/
-src-tauri/gen/
+app/gen/
 
 # Large reference files
 references/*.pdf
