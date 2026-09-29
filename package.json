@@ -1,7 +1,7 @@
 {
   "name": "ecm-discovery",
   "productName": "Edge Camera Discovery",
-  "version": "0.10.0-alpha.3",
+  "version": "0.10.0-alpha.4",
   "description": "Discover 3dvisionlabs ECM cameras on the local network",
   "private": true,
   "type": "module",
@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite ui",
     "build": "tsc --noEmit -p ui && vite build ui",
+    "build:cli": "cargo build --release -p ecm-discovery-cli",
     "tauri": "tauri",
     "start": "tauri dev",
     "make": "tauri build",

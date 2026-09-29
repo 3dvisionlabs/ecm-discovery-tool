@@ -47,18 +47,18 @@ The Linux `.deb` and `.rpm` packages declare these as dependencies and install t
 
 ## Installation
 
-Download the installer for your platform from the [Releases](../../releases) page.
+Download the file for your operating system from the [Releases](../../releases) page. Every file except the AppImage also contains the command line tool `ecm-discovery-cli` (see [Command Line](#command-line)).
 
 | Platform | File | Notes |
 |---|---|---|
-| Windows | `Edge Camera Discovery_x.x.x_x64-setup.exe` | Installs to user profile, no admin rights needed |
-| Windows (portable) | `Edge Camera Discovery_x.x.x_x64-portable.zip` | Extract and run, no installation (needs WebView2) |
-| macOS | `Edge Camera Discovery_x.x.x_aarch64.dmg` | Apple Silicon. Drag to Applications |
-| macOS (zip) | `Edge Camera Discovery_x.x.x_aarch64.app.zip` | Apple Silicon. Extract and run |
-| Linux | `Edge Camera Discovery_x.x.x_amd64.deb` | Debian/Ubuntu |
-| Linux | `Edge Camera Discovery-x.x.x-1.x86_64.rpm` | Fedora/RHEL/openSUSE |
-| Linux | `Edge Camera Discovery_x.x.x_amd64.AppImage` | Universal (any distro) |
-| Command line | `ecm-discovery-cli_x.x.x_<platform>` (`.tar.gz` / `.zip`) | Single executable, see [Command Line](#command-line) |
+| Windows | `ecm-discovery_x.x.x_windows_x64_setup.exe` | Installs to user profile, no admin rights needed. Adds the command line tool to your `PATH` |
+| Windows (portable) | `ecm-discovery_x.x.x_windows_x64_portable.zip` | Extract and run, no installation (needs WebView2) |
+| macOS | `ecm-discovery_x.x.x_macos_arm64.dmg` | Apple Silicon. Drag to Applications |
+| macOS (zip) | `ecm-discovery_x.x.x_macos_arm64.zip` | Apple Silicon. Extract and run |
+| Linux | `ecm-discovery_x.x.x_linux_amd64.deb` | Debian/Ubuntu |
+| Linux | `ecm-discovery_x.x.x_linux_x86_64.rpm` | Fedora/RHEL/openSUSE |
+| Linux | `ecm-discovery_x.x.x_linux_x86_64.AppImage` | Universal (any distro), app only |
+| Linux (portable) | `ecm-discovery_x.x.x_linux_x86_64.tar.gz` | App and command line tool, no installation (needs the runtime packages above) |
 
 ---
 
@@ -123,7 +123,23 @@ The **lamp button** makes the camera's status LEDs flash for 10 seconds, so you 
 
 ## Command Line
 
-`ecm-discovery-cli` offers the same functions without a window, e.g. for scripts or headless machines. It is a single executable without dependencies (on Linux, mDNS discovery uses `avahi-browse` like the app). Download the archive for your platform from the [Releases](../../releases) page, extract it and put `ecm-discovery-cli` somewhere in your `PATH`. On macOS, remove the quarantine attribute once: `xattr -d com.apple.quarantine ecm-discovery-cli`.
+`ecm-discovery-cli` offers the same functions without a window, e.g. for scripts or headless machines. It is a single executable without further dependencies (on Linux, mDNS discovery uses `avahi-browse` like the app) and comes with the app:
+
+| Installed from | Command line tool |
+|---|---|
+| Linux `.deb` / `.rpm` | `/usr/bin/ecm-discovery-cli`, ready to use |
+| Linux `.tar.gz` | next to the app in the extracted folder; copy it to e.g. `/usr/local/bin` or `~/.local/bin` |
+| Windows setup | installed next to the app and added to your `PATH` (open a new terminal after installing) |
+| Windows portable `.zip` | `ecm-discovery-cli.exe` next to the app |
+| macOS `.dmg` / `.zip` | inside the app; make it available once with the commands below |
+
+On macOS (after moving the app to Applications):
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Edge Camera Discovery.app"
+sudo mkdir -p /usr/local/bin
+sudo ln -sf "/Applications/Edge Camera Discovery.app/Contents/MacOS/ecm-discovery-cli" /usr/local/bin/ecm-discovery-cli
+```
 
 ```bash
 ecm-discovery-cli list                      # scan once and list all cameras
@@ -190,13 +206,11 @@ npm run lint       # ESLint for the TypeScript UI
 npm run make
 ```
 
-Builds the installers for the platform you are on (cross-compilation is not supported):
+Builds the app, the command line tool and the packages for the platform you are on (cross-compilation is not supported) in `target/release/bundle/`. To get the files with the names used on the Releases page (and the portable archives):
 
-| Platform | Output in `target/release/bundle/` |
-|---|---|
-| Windows | `nsis/Edge Camera Discovery_x.x.x_x64-setup.exe` |
-| macOS | `dmg/Edge Camera Discovery_x.x.x_aarch64.dmg`, `macos/Edge Camera Discovery.app` |
-| Linux | `deb/…amd64.deb`, `rpm/…x86_64.rpm`, `appimage/…amd64.AppImage` |
+```bash
+./scripts/collect-release-files.sh    # → target/release/upload/
+```
 
 ### Command line tool
 
@@ -204,7 +218,7 @@ Builds the installers for the platform you are on (cross-compilation is not supp
 cargo build --release -p ecm-discovery-cli    # → target/release/ecm-discovery-cli
 ```
 
-Only needs Rust, no Node.js or WebKitGTK.
+Only the command line tool; needs only Rust, no Node.js or WebKitGTK.
 
 ### Linux with fractional display scaling
 

@@ -7,7 +7,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run build && npm run build:cli",
     "frontendDist": "../ui/dist"
   },
   "app": {
@@ -57,7 +57,10 @@
         ],
         "conflicts": [
           "ecm-discovery"
-        ]
+        ],
+        "files": {
+          "/usr/bin/ecm-discovery-cli": "../target/release/ecm-discovery-cli"
+        }
       },
       "rpm": {
         "depends": [
@@ -65,16 +68,23 @@
         ],
         "obsoletes": [
           "ecm-discovery"
-        ]
+        ],
+        "files": {
+          "/usr/bin/ecm-discovery-cli": "../target/release/ecm-discovery-cli"
+        }
       }
     },
     "macOS": {
       "signingIdentity": "-",
-      "minimumSystemVersion": "10.15"
+      "minimumSystemVersion": "10.15",
+      "files": {
+        "MacOS/ecm-discovery-cli": "../target/release/ecm-discovery-cli"
+      }
     },
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "windows/installer-hooks.nsh"
       }
     }
   }

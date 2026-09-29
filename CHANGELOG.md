@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.10.0-alpha.4] - 2026-09-29
+
+### Changed
+- The command line tool `ecm-discovery-cli` comes with the app instead of as a separate download: in `/usr/bin` with the `.deb` and `.rpm` packages, added to your `PATH` by the Windows installer, inside the app on macOS
+- New Linux download: portable `.tar.gz` with app and command line tool
+- File names on the Releases page show the operating system, e.g. `ecm-discovery_0.10.0_windows_x64_setup.exe`
+
+---
+
 ## [0.10.0-alpha.3] - 2026-09-29
 
 ### Added
